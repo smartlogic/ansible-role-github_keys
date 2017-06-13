@@ -1,6 +1,6 @@
 galaxy_info:
   author: Dan Ivovich
-  description: Adds pubic keys from GitHub to authorized_keys
+  description: Adds public keys from GitHub to authorized_keys
   company: SmartLogic
   license: MIT
   min_ansible_version: 2.1
