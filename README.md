@@ -1,4 +1,4 @@
-Role Name
+GitHub Keys
 =========
 
 Install authorized_keys into a given user. Fetches the public keys from GitHub 
