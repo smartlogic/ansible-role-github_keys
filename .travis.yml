@@ -17,6 +17,9 @@ script:
   - 'docker run --detach --volume="${PWD}":/etc/ansible/roles/github_keys:ro ${run_opts} geerlingguy/docker-${distro}-ansible:latest "${init}" > "${container_id}"'
   - >
     docker exec --tty "$(cat ${container_id})" env TERM=xterm
+    pip install jmespath
+  - >
+    docker exec --tty "$(cat ${container_id})" env TERM=xterm
     ansible-playbook /etc/ansible/roles/github_keys/tests/test.yml
     --syntax-check
   - >
