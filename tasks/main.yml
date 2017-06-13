@@ -1,0 +1,68 @@
+---
+- name: Create the {{ github_keys_install_user }} user
+  user:
+    name: "{{ github_keys_install_user }}"
+    shell: /bin/bash
+    password: "*"
+  become: true
+  when: github_keys_create_install_user
+
+- name: Create ssh folder for {{ github_keys_install_user }}
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh
+    state: directory
+    mode: 0700
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+
+- name: Clear ssh grouping folder for {{ github_keys_install_user }}
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh/source_keys
+    state: absent
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+  when: github_keys_force_refresh
+
+- name: Create ssh grouping folder for {{ github_keys_install_user }}
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh/source_keys
+    state: directory
+    mode: 0700
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+
+- include: org_keys.yml
+  with_items: "{{ github_keys_github_orgs }}"
+  loop_control:
+    loop_var: github_keys_github_org
+
+- include: user_keys.yml
+  with_items: "{{ github_keys_github_users }}"
+  loop_control:
+    loop_var: github_keys_github_user
+
+- name: assemble addional keys into single file for {{ github_keys_install_user }}
+  lineinfile:
+    dest: /home/{{ github_keys_install_user }}/.ssh/source_keys/_additional_keys
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+    state: present
+    create: yes
+    regexp: "^{{ item }}"
+    line: "{{ item }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+  with_items: "{{ github_keys_addtional_keys }}"
+
+- name: assemble keys into single authorized keys file for {{ github_keys_install_user }}
+  assemble:
+    src: /home/{{ github_keys_install_user }}/.ssh/source_keys
+    dest: /home/{{ github_keys_install_user }}/.ssh/authorized_keys
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"

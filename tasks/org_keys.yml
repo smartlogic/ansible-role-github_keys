@@ -1,0 +1,52 @@
+---
+- name: Get {{ github_keys_github_org }} members
+  uri:
+    url: https://api.github.com/orgs/{{ github_keys_github_org }}/members
+    method: GET
+    status_code: 200
+    body_format: json
+    return_content: yes
+  register: org_members
+
+- name: clear ssh keys org {{ github_keys_github_org }} folder
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh/{{ github_keys_github_org }}_keys
+    state: absent
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+  when: github_keys_force_refresh
+
+- name: Create ssh keys org {{ github_keys_github_org }} folder
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh/{{ github_keys_github_org }}_keys
+    state: directory
+    mode: 0700
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+
+- name: Get {{ github_keys_github_org }} member keys
+  get_url:
+    url: "https://github.com/{{ item }}.keys"
+    dest: "/home/{{ github_keys_install_user }}/.ssh/{{ github_keys_github_org }}_keys/{{ item }}.keys"
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  with_items: "{{ org_members.json | json_query('[*].login') }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+
+- name: clear org members register
+  set_fact:
+    org_members: ""
+
+- name: assemble {{ github_keys_github_org }} keys into single file
+  assemble:
+    src: /home/{{ github_keys_install_user }}/.ssh/{{ github_keys_github_org }}_keys
+    dest: /home/{{ github_keys_install_user }}/.ssh/source_keys/{{ github_keys_github_org }}_keys
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"

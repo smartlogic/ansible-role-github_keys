@@ -1,0 +1,14 @@
+---
+- hosts: all
+  vars:
+    github_keys_github_orgs:
+      - smartlogic
+      - elixir-lang
+    github_keys_github_users:
+      - sls-ci-borg
+    github_keys_addtional_keys:
+      - hereisakeythatisnotakeybutletustestitanyway
+    github_keys_create_install_user: true
+    github_keys_install_user: deploy
+  roles:
+    - github_keys

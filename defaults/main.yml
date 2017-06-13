@@ -1,0 +1,9 @@
+---
+# defaults file for github_keys
+
+# github_keys_install_user: no default
+github_keys_create_install_user: true
+github_keys_github_orgs: []
+github_keys_github_users: []
+github_keys_addtional_keys: []
+github_keys_force_refresh: false

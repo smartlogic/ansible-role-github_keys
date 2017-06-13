@@ -1,0 +1,15 @@
+galaxy_info:
+  author: Dan Ivovich
+  description: Add's pubic keys from GitHub to authorized_keys
+  company: SmartLogic
+  license: MIT
+  min_ansible_version: 2.1
+  platforms:
+    - name: Ubuntu
+      versions:
+        - 16.04
+  galaxy_tags:
+    - GitHub
+    - SSH
+    - authorized_keys
+dependencies: []
