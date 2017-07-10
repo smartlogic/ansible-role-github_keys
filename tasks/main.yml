@@ -52,7 +52,7 @@
     group: "{{ github_keys_install_user }}"
     state: present
     create: yes
-    regexp: "^{{ item }}"
+    regexp: "^{{ item | regex_escape() }}"
     line: "{{ item }}"
   become: true
   become_user: "{{ github_keys_install_user }}"
