@@ -56,7 +56,7 @@
     line: "{{ item }}"
   become: true
   become_user: "{{ github_keys_install_user }}"
-  with_items: "{{ github_keys_addtional_keys }}"
+  with_items: "{{ github_keys_additional_keys }}"
 
 - name: assemble keys into single authorized keys file for {{ github_keys_install_user }}
   assemble:

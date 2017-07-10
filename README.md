@@ -22,7 +22,7 @@ Role Variables
 * `github_keys_github_users` : array of additional github users to get public 
     keys from
     * Default: `[]`
-* `github_keys_addtional_keys` : array of additional public keys to add to 
+* `github_keys_additional_keys` : array of additional public keys to add to 
     authorized_keys
     * Default: `[]`
 * `github_keys_force_refresh` : True to force a fetch of keys, even if they 
