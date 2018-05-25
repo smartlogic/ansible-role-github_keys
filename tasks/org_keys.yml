@@ -49,4 +49,3 @@
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   become: true
-  become_user: "{{ github_keys_install_user }}"
