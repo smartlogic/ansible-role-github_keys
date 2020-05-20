@@ -17,7 +17,24 @@
   become: true
   become_user: "{{ github_keys_install_user }}"
 
-- name: Clear ssh grouping folder for {{ github_keys_install_user }}
+- name: Retrieving file stat data from {{ github_keys_install_user }} authorized_keys
+  stat:
+    path: /home/{{ github_keys_install_user }}/.ssh/authorized_keys
+  register: authorized_keys_stats
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+
+- name: Clear ssh grouping folder for {{ github_keys_install_user }} if old
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh/source_keys
+    state: absent
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+  when:
+    - github_keys_stale_auth_days != false
+    - (ansible_date_time.epoch|int - authorized_keys_stats.stat.mtime) > (github_keys_stale_auth_days * 60 * 60 * 24)
+
+- name: Clear ssh grouping folder for {{ github_keys_install_user }} if forced
   file:
     path: /home/{{ github_keys_install_user }}/.ssh/source_keys
     state: absent
@@ -60,8 +77,20 @@
 
 - name: assemble keys into single authorized keys file for {{ github_keys_install_user }}
   assemble:
+    backup: yes
     src: /home/{{ github_keys_install_user }}/.ssh/source_keys
     dest: /home/{{ github_keys_install_user }}/.ssh/authorized_keys
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   become: true
+
+- name: Track update for {{ github_keys_install_user }} authorized_keys if a timebased refresh happened, but no content changed
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh/authorized_keys
+    state: touch
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  become: true
+  when:
+    - github_keys_stale_auth_days != false
+    - (ansible_date_time.epoch|int - authorized_keys_stats.stat.mtime) > (github_keys_stale_auth_days * 60 * 60 * 24)
