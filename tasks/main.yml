@@ -32,6 +32,7 @@
   become_user: "{{ github_keys_install_user }}"
   when:
     - github_keys_stale_auth_days != false
+    - authorized_keys_stats.stat.exists
     - (ansible_date_time.epoch|int - authorized_keys_stats.stat.mtime) > (github_keys_stale_auth_days * 60 * 60 * 24)
 
 - name: Clear ssh grouping folder for {{ github_keys_install_user }} if forced
