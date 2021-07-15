@@ -28,11 +28,6 @@ Role Variables
 * `github_keys_force_refresh` : True to force a fetch of keys, even if they
     appear to be loaded already
     * Default: `false`
-* `github_keys_stale_auth_days` : Time for when the authorized_key file
-    hasn't been modified that it is force updated regardless of
-    the `github_keys_force_refresh` setting. A setting of `false` will not trigger,
-    expected to be a number when not false
-    * Default: `false`
 
 Dependencies
 ------------
