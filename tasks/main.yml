@@ -1,4 +1,8 @@
 ---
+- name: Setup members array
+  set_fact:
+    github_members: []
+
 - name: Create the {{ github_keys_install_user }} user
   user:
     name: "{{ github_keys_install_user }}"
@@ -16,24 +20,6 @@
     group: "{{ github_keys_install_user }}"
   become: true
   become_user: "{{ github_keys_install_user }}"
-
-- name: Retrieving file stat data from {{ github_keys_install_user }} authorized_keys
-  stat:
-    path: /home/{{ github_keys_install_user }}/.ssh/authorized_keys
-  register: authorized_keys_stats
-  become: true
-  become_user: "{{ github_keys_install_user }}"
-
-- name: Clear ssh grouping folder for {{ github_keys_install_user }} if old
-  file:
-    path: /home/{{ github_keys_install_user }}/.ssh/source_keys
-    state: absent
-  become: true
-  become_user: "{{ github_keys_install_user }}"
-  when:
-    - github_keys_stale_auth_days != false
-    - authorized_keys_stats.stat.exists
-    - (ansible_date_time.epoch|int - authorized_keys_stats.stat.mtime) > (github_keys_stale_auth_days * 60 * 60 * 24)
 
 - name: Clear ssh grouping folder for {{ github_keys_install_user }} if forced
   file:
@@ -53,28 +39,65 @@
   become: true
   become_user: "{{ github_keys_install_user }}"
 
+- name: Clear old org folders
+  file:
+    path: /home/{{ github_keys_install_user }}/.ssh/{{ github_keys_github_org }}_keys
+    state: absent
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+  with_items: "{{ github_keys_github_orgs }}"
+  loop_control:
+    loop_var: github_keys_github_org
+
 - include: org_keys.yml
   with_items: "{{ github_keys_github_orgs }}"
   loop_control:
     loop_var: github_keys_github_org
 
-- include: user_keys.yml
-  with_items: "{{ github_keys_github_users }}"
-  loop_control:
-    loop_var: github_keys_github_user
+- name: Add github users by username
+  set_fact:
+    github_members: "{{ github_members | union(github_keys_github_users) }}"
 
-- name: assemble addional keys into single file for {{ github_keys_install_user }}
-  lineinfile:
+- name: Existing keys
+  find:
+    paths: /home/{{ github_keys_install_user }}/.ssh/source_keys
+    patterns: "*.keys"
+  register: existing_keys_raw
+
+- name: Github Users lowercased
+  set_fact:
+    github_members: "{{ github_members | map('lower') }}"
+
+- name: Existing usernames
+  set_fact:
+    existing_keys: "{{ existing_keys_raw.files | map(attribute='path') | map('regex_replace', '.*/(.*).keys', '\\1') }}"
+
+- name: Get keys
+  get_url:
+    url: "https://github.com/{{ item | lower }}.keys"
+    dest: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ item | lower }}.keys"
+    owner: "{{ github_keys_install_user }}"
+    group: "{{ github_keys_install_user }}"
+  with_items: "{{ github_members }}"
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+
+- name: Clear keys that should no longer have access
+  file:
+    path: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ item }}.keys"
+    state: absent
+  become: true
+  become_user: "{{ github_keys_install_user }}"
+  with_items: "{{ existing_keys | difference(github_members) }}"
+
+- name: assemble additional keys into single file for {{ github_keys_install_user }}
+  template:
+    src: templates/additional_keys.j2
     dest: /home/{{ github_keys_install_user }}/.ssh/source_keys/_additional_keys
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
-    state: present
-    create: yes
-    regexp: "^{{ item | regex_escape() }}"
-    line: "{{ item }}"
   become: true
   become_user: "{{ github_keys_install_user }}"
-  with_items: "{{ github_keys_additional_keys }}"
 
 - name: assemble keys into single authorized keys file for {{ github_keys_install_user }}
   assemble:
@@ -84,15 +107,3 @@
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   become: true
-
-- name: Track update for {{ github_keys_install_user }} authorized_keys if a timebased refresh happened, but no content changed
-  file:
-    path: /home/{{ github_keys_install_user }}/.ssh/authorized_keys
-    state: touch
-    owner: "{{ github_keys_install_user }}"
-    group: "{{ github_keys_install_user }}"
-  become: true
-  when:
-    - github_keys_stale_auth_days != false
-    - authorized_keys_stats.stat.exists
-    - (ansible_date_time.epoch|int - authorized_keys_stats.stat.mtime) > (github_keys_stale_auth_days * 60 * 60 * 24)
