@@ -7,4 +7,3 @@ github_keys_github_orgs: []
 github_keys_github_users: []
 github_keys_additional_keys: []
 github_keys_force_refresh: false
-github_keys_stale_auth_days: false
