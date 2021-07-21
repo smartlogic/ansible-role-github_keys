@@ -9,7 +9,5 @@ and cleans up without intervention. See the Breaking Changes below.
 
 * Time based param `github_keys_stale_auth_days` is no longer used
 
-* While nothing should break, this update will clean out old folders that are not in use,
-  the download of specific GitHub username keys now standardizes on all lowercase naming.
-  If you used username based keys, it is suggested that you do a force refresh, unless every username
-  ever used was already completely lowercased.
+* Due to the standardization of set comparison and lowercasing of usernames, a forced refresh is required
+  the first time verion 1.0.0 is used
