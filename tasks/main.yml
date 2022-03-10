@@ -66,21 +66,20 @@
 
 - name: Github Users lowercased
   set_fact:
-    github_members: "{{ github_members | map('lower') }}"
+    github_members: "{{ github_members | map('lower') | list }}"
 
 - name: Existing usernames
   set_fact:
-    existing_keys: "{{ existing_keys_raw.files | map(attribute='path') | map('regex_replace', '.*/(.*).keys', '\\1') }}"
+    existing_keys: "{{ existing_keys_raw.files | map(attribute='path') | map('regex_replace', '.*/(.*).keys', '\\1') | list }}"
 
 - name: Get keys
   get_url:
-    url: "https://github.com/{{ item | lower }}.keys"
-    dest: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ item | lower }}.keys"
+    url: "https://github.com/{{ item }}.keys"
+    dest: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ item }}.keys"
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   with_items: "{{ github_members }}"
   become: true
-  become_user: "{{ github_keys_install_user }}"
 
 - name: Clear keys that should no longer have access
   file:
@@ -97,7 +96,6 @@
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   become: true
-  become_user: "{{ github_keys_install_user }}"
 
 - name: assemble keys into single authorized keys file for {{ github_keys_install_user }}
   assemble:
