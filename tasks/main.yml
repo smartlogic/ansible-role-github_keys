@@ -19,32 +19,28 @@
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   become: true
-  become_user: "{{ github_keys_install_user }}"
 
 - name: Clear ssh grouping folder for {{ github_keys_install_user }} if forced
   file:
     path: /home/{{ github_keys_install_user }}/.ssh/source_keys
     state: absent
   become: true
-  become_user: "{{ github_keys_install_user }}"
   when: github_keys_force_refresh
 
 - name: Create ssh grouping folder for {{ github_keys_install_user }}
   file:
     path: /home/{{ github_keys_install_user }}/.ssh/source_keys
     state: directory
-    mode: 0700
+    mode: 0771
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   become: true
-  become_user: "{{ github_keys_install_user }}"
 
 - name: Clear old org folders
   file:
     path: /home/{{ github_keys_install_user }}/.ssh/{{ github_keys_github_org }}_keys
     state: absent
   become: true
-  become_user: "{{ github_keys_install_user }}"
   with_items: "{{ github_keys_github_orgs }}"
   loop_control:
     loop_var: github_keys_github_org
@@ -74,20 +70,23 @@
 
 - name: Get keys
   get_url:
-    url: "https://github.com/{{ item }}.keys"
-    dest: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ item }}.keys"
+    url: "https://github.com/{{ github_member }}.keys"
+    dest: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ github_member }}.keys"
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   with_items: "{{ github_members }}"
+  loop_control:
+    loop_var: github_member
   become: true
 
 - name: Clear keys that should no longer have access
   file:
-    path: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ item }}.keys"
+    path: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ github_member }}.keys"
     state: absent
   become: true
-  become_user: "{{ github_keys_install_user }}"
   with_items: "{{ existing_keys | difference(github_members) }}"
+  loop_control:
+    loop_var: github_member
 
 - name: assemble additional keys into single file for {{ github_keys_install_user }}
   template:
