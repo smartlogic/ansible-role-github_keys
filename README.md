@@ -1,13 +1,13 @@
 GitHub Keys
 =========
 
-Install authorized_keys into a given user. Fetches the public keys from GitHub 
+Install authorized_keys into a given user. Fetches the public keys from GitHub
 for specified users, or users in specified organizations.
 
 Requirements
 ------------
 
-None
+Ansible 2.8 or higher
 
 Role Variables
 --------------

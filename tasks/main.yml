@@ -35,6 +35,7 @@
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   become: true
+  register: create_group_folder
 
 - name: Clear old organization folders from previous versions of the role
   file:
@@ -59,6 +60,14 @@
     paths: /home/{{ github_keys_install_user }}/.ssh/source_keys
     patterns: "*.keys"
   register: existing_keys_raw
+  become: true
+
+- name: Assert the find of existing keys worked
+  assert:
+    that:
+      - (existing_keys_raw.examined == 0 and create_group_folder.changed) or (existing_keys_raw.examined > 0 and not create_group_folder.changed)
+    fail_msg: "Did not examine any existing keys, but the folder existed, run with github_keys_force_refresh"
+    success_msg: "Find of existing keys files looks good"
 
 - name: Normalize github usernames
   set_fact:
