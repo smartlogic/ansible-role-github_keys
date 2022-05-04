@@ -36,7 +36,7 @@
     group: "{{ github_keys_install_user }}"
   become: true
 
-- name: Clear old org folders
+- name: Clear old organization folders from previous versions of the role
   file:
     path: /home/{{ github_keys_install_user }}/.ssh/{{ github_keys_github_org }}_keys
     state: absent
@@ -45,50 +45,74 @@
   loop_control:
     loop_var: github_keys_github_org
 
-- include: org_keys.yml
+- include_tasks: org_keys.yml
   with_items: "{{ github_keys_github_orgs }}"
   loop_control:
     loop_var: github_keys_github_org
 
-- name: Add github users by username
+- name: Add specific github members to the access array
   set_fact:
     github_members: "{{ github_members | union(github_keys_github_users) }}"
 
-- name: Existing keys
+- name: Determine the existing keys installed
   find:
     paths: /home/{{ github_keys_install_user }}/.ssh/source_keys
     patterns: "*.keys"
   register: existing_keys_raw
 
-- name: Github Users lowercased
+- name: Normalize github usernames
   set_fact:
     github_members: "{{ github_members | map('lower') | list }}"
 
-- name: Existing usernames
+- name: Expecting to install keys for these github members
+  debug:
+    var: github_members
+    verbosity: 1
+
+- name: Determine Existing github usernames with keys on the server
   set_fact:
     existing_keys: "{{ existing_keys_raw.files | map(attribute='path') | map('regex_replace', '.*/(.*).keys', '\\1') | list }}"
 
-- name: Get keys
+- name: Found these existing keys installed
+  debug:
+    var: existing_keys
+    verbosity: 1
+
+- name: Determine access to removed
+  set_fact:
+    removing_members: "{{ existing_keys | difference(github_members) }}"
+
+- name: Found these members to remove
+  debug:
+    var: removing_members
+    verbosity: 1
+
+- name: Tell me if the next step won't do anything intentionally
+  debug:
+    msg: No members to remove from the server
+  when: removing_members | length < 1
+
+- name: Clear keys that should no longer have access
+  file:
+    path: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ clear_github_member }}.keys"
+    state: absent
+  become: true
+  with_items: "{{ removing_members }}"
+  loop_control:
+    loop_var: clear_github_member
+
+- name: Get keys for expected members
   get_url:
-    url: "https://github.com/{{ github_member }}.keys"
-    dest: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ github_member }}.keys"
+    url: "https://github.com/{{ expected_github_member }}.keys"
+    dest: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ expected_github_member }}.keys"
     owner: "{{ github_keys_install_user }}"
     group: "{{ github_keys_install_user }}"
   with_items: "{{ github_members }}"
   loop_control:
-    loop_var: github_member
+    loop_var: expected_github_member
   become: true
 
-- name: Clear keys that should no longer have access
-  file:
-    path: "/home/{{ github_keys_install_user }}/.ssh/source_keys/{{ github_member }}.keys"
-    state: absent
-  become: true
-  with_items: "{{ existing_keys | difference(github_members) }}"
-  loop_control:
-    loop_var: github_member
-
-- name: assemble additional keys into single file for {{ github_keys_install_user }}
+- name: Assemble additional keys into single file for {{ github_keys_install_user }}
   template:
     src: templates/additional_keys.j2
     dest: /home/{{ github_keys_install_user }}/.ssh/source_keys/_additional_keys
@@ -96,7 +120,7 @@
     group: "{{ github_keys_install_user }}"
   become: true
 
-- name: assemble keys into single authorized keys file for {{ github_keys_install_user }}
+- name: Assemble all keys into single authorized keys file for {{ github_keys_install_user }}
   assemble:
     backup: yes
     src: /home/{{ github_keys_install_user }}/.ssh/source_keys

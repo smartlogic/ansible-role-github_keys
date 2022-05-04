@@ -8,15 +8,15 @@
     return_content: yes
   register: org_members_json
 
-- name: Store org members for {{ github_keys_github_org }}
+- name: Store public organization members for {{ github_keys_github_org }}
   set_fact:
     org_members: "{{ org_members_json.json | json_query('[*].login') }}"
 
-- name: Add org members for {{ github_keys_github_org }}
+- name: Add public organization members for {{ github_keys_github_org }}
   set_fact:
     github_members: "{{ github_members | union(org_members) }}"
 
-- name: clear org members register
+- name: Clear local registers for organization members
   set_fact:
     org_members: ""
     org_members_json: ""
